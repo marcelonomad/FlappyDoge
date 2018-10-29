@@ -11,7 +11,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.Event;
@@ -19,7 +18,6 @@ import com.badlogic.gdx.scenes.scene2d.EventListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -30,6 +28,29 @@ import java.util.Random;
 public class FlappyDoge extends ApplicationAdapter {
 
 
+    final float VIRTUAL_WIDTH = 768, VIRTUAL_HEIGHT = 1024;
+    ShapeRenderer shape;
+    //region Atributos
+    float alturaDispositivo;
+    float larguraDispositivo;
+    int estadoJogo = 0;
+    int pontuacao = 124;
+    int nfundo;
+    float variacao;
+    float velocidadeQueda = 0;
+    float posicaoInicialVertical;
+    float posicaoMovimentoCanoHorizontal;
+    float espacoEntreCanos;
+
+    //endregion
+    float deltaTime;
+    float alturaEntreCanosAleatoria;
+    boolean marcouPonto, firstTouch;
+    int highScore;
+    Integer[] pontuacaoDigits;
+    //region camera
+    OrthographicCamera camera;
+    Viewport viewport;
     //region Objetos
     private Preferences preferences;
     private Stage stage;
@@ -40,38 +61,25 @@ public class FlappyDoge extends ApplicationAdapter {
     private Random numeroAleatorio;
     private BitmapFont fonte, msgGameOver;
     private Rectangle canoTopoCollision, canoBaixoCollision, dogeCollision;
-    ShapeRenderer shape;
+    //endregion
     private TextureRegion playRegion;
     private TextureRegionDrawable playRegionDrawable;
     private ImageButton playButton;
 
     //endregion
 
-    //region Atributos
-    float alturaDispositivo;
-    float larguraDispositivo;
-    int estadoJogo = 0;
-    int pontuacao = 100;
-    int nfundo;
-    float variacao;
-    float velocidadeQueda = 0;
-    float posicaoInicialVertical;
-    float posicaoMovimentoCanoHorizontal;
-    float espacoEntreCanos;
-    float deltaTime;
-    float alturaEntreCanosAleatoria;
-    boolean marcouPonto, firstTouch;
-    int highScore;
-    Integer[] pontuacaoDigits;
-    //endregion
+    public static Integer[] getDigits(int num) {
+        List<Integer> digits = new ArrayList<Integer>();
+        collectDigits(num, digits);
+        return digits.toArray(new Integer[]{});
+    }
 
-    //region camera
-    OrthographicCamera camera;
-    Viewport viewport;
-    final float VIRTUAL_WIDTH = 768, VIRTUAL_HEIGHT = 1024;
-
-    //endregion
-
+    private static void collectDigits(int num, List<Integer> digits) {
+        if (num / 10 > 0) {
+            collectDigits(num / 10, digits);
+        }
+        digits.add(num % 10);
+    }
 
     @Override
     public void create() {
@@ -195,7 +203,6 @@ public class FlappyDoge extends ApplicationAdapter {
             stage.getBatch().end();
             stage.draw();
             playButton.setPosition(larguraDispositivo / 2 - playButton.getWidth() / 2, (alturaDispositivo / 2) - playButton.getHeight() * 2);
-            // msgGameOver.draw(batch, "Toque para Reiniciar!", larguraDispositivo / 2 - 200, (alturaDispositivo / 2 + 200) - gameOver.getHeight() / 2 - 100);
         }
         batch.end();
 
@@ -224,6 +231,8 @@ public class FlappyDoge extends ApplicationAdapter {
             estadoJogo = 2;
         }
     }
+
+    //region SetupDigits
 
     @Override
     public void resize(int width, int height) {
@@ -294,27 +303,11 @@ public class FlappyDoge extends ApplicationAdapter {
         //endregion
     }
 
-    //region SetupDigits
-
-    public static Integer[] getDigits(int num) {
-        List<Integer> digits = new ArrayList<Integer>();
-        collectDigits(num, digits);
-        return digits.toArray(new Integer[]{});
-    }
-
-    private static void collectDigits(int num, List<Integer> digits) {
-        if (num / 10 > 0) {
-            collectDigits(num / 10, digits);
-        }
-        digits.add(num % 10);
-    }
-
 //endregion
 
     //region Calcular Pontuacao
 
-
-    void Pontuacao_Geral() {
+    private void Pontuacao_Geral() {
         pontuacaoDigits = getDigits(pontuacao);
 
         if (pontuacaoDigits.length == 1) {
@@ -336,7 +329,7 @@ public class FlappyDoge extends ApplicationAdapter {
         }
     }
 
-    void Pontuacao_Final() {
+    private void Pontuacao_Final() {
 
         pontuacaoDigits = getDigits(pontuacao);
 
@@ -347,18 +340,21 @@ public class FlappyDoge extends ApplicationAdapter {
 
 
         } else if (pontuacaoDigits.length == 2) {
-            batch.draw(digitsSmall[pontuacaoDigits[1]], larguraDispositivo / 2 - digitsSmall[pontuacaoDigits[0]].getWidth() / 2,
-                    (alturaDispositivo - digitsSmall[pontuacaoDigits[0]].getHeight()) - 25);
-            batch.draw(digitsSmall[pontuacaoDigits[0]], larguraDispositivo / 2 - digitsSmall[pontuacaoDigits[1]].getWidth() / 2 - 50,
-                    (alturaDispositivo - digitsSmall[pontuacaoDigits[1]].getHeight()) - 25);
-        } else if (pontuacaoDigits.length == 3) {
+            stage.getBatch().draw(digitsSmall[pontuacaoDigits[0]], larguraDispositivo / 2 + (endScore.getWidth() / 2) - 90 - digitsSmall[pontuacaoDigits[0]].getWidth(),
+                    (alturaDispositivo / 2 + digitsSmall[pontuacaoDigits[0]].getHeight() / 2));
+            stage.getBatch().draw(digitsSmall[pontuacaoDigits[1]],
+                    larguraDispositivo / 2 + (endScore.getWidth() / 2) - 50 - digitsSmall[pontuacaoDigits[1]].getWidth(),
+                    alturaDispositivo / 2 + digitsSmall[pontuacaoDigits[1]].getHeight() / 2);
 
-            batch.draw(digitsSmall[pontuacaoDigits[2]], larguraDispositivo / 2 - digitsSmall[pontuacaoDigits[0]].getWidth() + 100,
-                    (alturaDispositivo - digitsSmall[pontuacaoDigits[2]].getHeight()) - 25);
-            batch.draw(digitsSmall[pontuacaoDigits[1]], larguraDispositivo / 2 - digitsSmall[pontuacaoDigits[0]].getWidth() + 50,
-                    (alturaDispositivo - digitsSmall[pontuacaoDigits[2]].getHeight()) - 25);
-            batch.draw(digitsSmall[pontuacaoDigits[0]], larguraDispositivo / 2 - digitsSmall[pontuacaoDigits[0]].getWidth(),
-                    (alturaDispositivo - digitsSmall[0].getHeight()) - 25);
+        } else if (pontuacaoDigits.length == 3) {
+            stage.getBatch().draw(digitsSmall[pontuacaoDigits[0]], larguraDispositivo / 2 + (endScore.getWidth() / 2) - 70 - digitsSmall[pontuacaoDigits[0]].getWidth(),
+                    alturaDispositivo / 2 + digitsSmall[pontuacaoDigits[0]].getHeight() / 2);
+
+            stage.getBatch().draw(digitsSmall[pontuacaoDigits[1]], larguraDispositivo / 2 + (endScore.getWidth() / 2) - 60 - digitsSmall[pontuacaoDigits[1]].getWidth(),
+                    (alturaDispositivo / 2 + digitsSmall[pontuacaoDigits[0]].getHeight() / 2));
+            stage.getBatch().draw(digitsSmall[pontuacaoDigits[2]],
+                    larguraDispositivo / 2 + (endScore.getWidth() / 2) - 50 - digitsSmall[pontuacaoDigits[0]].getWidth(),
+                    alturaDispositivo / 2 + digitsSmall[pontuacaoDigits[0]].getHeight() / 2);
         }
     }
 
