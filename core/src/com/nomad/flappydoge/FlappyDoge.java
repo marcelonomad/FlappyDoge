@@ -25,12 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import Interfaces.Services;
+
 public class FlappyDoge extends ApplicationAdapter {
 
-
     final float VIRTUAL_WIDTH = 768, VIRTUAL_HEIGHT = 1024;
+    Services services;
     ShapeRenderer shape;
-    //region Atributos
     float alturaDispositivo;
     float larguraDispositivo;
     int estadoJogo = 0;
@@ -41,17 +42,13 @@ public class FlappyDoge extends ApplicationAdapter {
     float posicaoInicialVertical;
     float posicaoMovimentoCanoHorizontal;
     float espacoEntreCanos;
-
-    //endregion
     float deltaTime;
     float alturaEntreCanosAleatoria;
     boolean marcouPonto, firstTouch;
     int highScore;
     Integer[] pontuacaoDigits;
-    //region camera
     OrthographicCamera camera;
     Viewport viewport;
-    //region Objetos
     private Preferences preferences;
     private Stage stage;
     private SpriteBatch batch;
@@ -61,10 +58,14 @@ public class FlappyDoge extends ApplicationAdapter {
     private Random numeroAleatorio;
     private BitmapFont fonte, msgGameOver;
     private Rectangle canoTopoCollision, canoBaixoCollision, dogeCollision;
-    //endregion
-    private TextureRegion playRegion;
-    private TextureRegionDrawable playRegionDrawable;
-    private ImageButton playButton;
+    private TextureRegion playRegion, shareRegion;
+    private TextureRegionDrawable playRegionDrawable, shareRegionDrawable;
+    private ImageButton playButton, shareButton;
+
+    public FlappyDoge(Services services) {
+        this.services = services;
+    }
+
 
     //endregion
 
@@ -109,6 +110,7 @@ public class FlappyDoge extends ApplicationAdapter {
 
         stage = new Stage(viewport);
         stage.addActor(playButton);
+        stage.addActor(shareButton);
 
         playButton.addListener(new EventListener() {
             @Override
@@ -122,6 +124,14 @@ public class FlappyDoge extends ApplicationAdapter {
                     firstTouch = true;
                     return false;
                 } else return true;
+            }
+        });
+
+        shareButton.addListener(new EventListener() {
+            @Override
+            public boolean handle(Event event) {
+                services.Share();
+                return false;
             }
         });
     }
@@ -147,12 +157,12 @@ public class FlappyDoge extends ApplicationAdapter {
                 posicaoInicialVertical -= velocidadeQueda;
 
             if (estadoJogo == 1) {
-                posicaoMovimentoCanoHorizontal -= deltaTime * 400;
+                posicaoMovimentoCanoHorizontal -= deltaTime * 430;
                 if (Gdx.input.justTouched())
                     velocidadeQueda = -15;
                 if (posicaoMovimentoCanoHorizontal < -canoTopo.getWidth()) {
                     posicaoMovimentoCanoHorizontal = larguraDispositivo;
-                    alturaEntreCanosAleatoria = numeroAleatorio.nextInt(350) - 200;
+                    alturaEntreCanosAleatoria = numeroAleatorio.nextInt(320) - 200;
                     marcouPonto = false;
                 }
                 if (posicaoMovimentoCanoHorizontal < 150) {
@@ -192,7 +202,7 @@ public class FlappyDoge extends ApplicationAdapter {
                 stage.getBatch().draw(platinumCoin, (larguraDispositivo / 2 - endScore.getWidth() / 2) + bronzeCoin.getWidth() / 2 + 10,
                         ((alturaDispositivo / 2) - endScore.getHeight() / 2) + bronzeCoin.getHeight() / 2 + 10);
             }
-
+            Pontuacao_Geral();
             Pontuacao_Final();
             preferences = Gdx.app.getPreferences("HighScore");
             highScore = preferences.getInteger("HighScore", 0);
@@ -207,6 +217,7 @@ public class FlappyDoge extends ApplicationAdapter {
             stage.getBatch().end();
             stage.draw();
             playButton.setPosition(larguraDispositivo / 2 - playButton.getWidth() / 2, (alturaDispositivo / 2) - playButton.getHeight() * 2);
+            shareButton.setPosition(larguraDispositivo - shareButton.getWidth() -  75, alturaDispositivo - 75);
         }
         batch.end();
 
@@ -272,6 +283,10 @@ public class FlappyDoge extends ApplicationAdapter {
         playRegionDrawable = new TextureRegionDrawable(playRegion);
         playButton = new ImageButton(playRegionDrawable);
 
+        shareRegion = new TextureRegion(share);
+        shareRegionDrawable = new TextureRegionDrawable(shareRegion);
+        shareButton = new ImageButton(shareRegionDrawable);
+
 
         //region BigDigits
 
@@ -316,21 +331,21 @@ public class FlappyDoge extends ApplicationAdapter {
 
         if (pontuacaoDigits.length == 1) {
             batch.draw(digits[pontuacaoDigits[0]], larguraDispositivo / 2 - digits[pontuacaoDigits[0]].getWidth() / 2,
-                    (alturaDispositivo - digits[pontuacaoDigits[0]].getHeight()) - 25);
+                    alturaDispositivo - 95);
 
         } else if (pontuacaoDigits.length == 2) {
             batch.draw(digits[pontuacaoDigits[1]], larguraDispositivo / 2 - digits[pontuacaoDigits[0]].getWidth() / 2,
-                    (alturaDispositivo - digits[pontuacaoDigits[0]].getHeight()) - 25);
+                    alturaDispositivo - 95);
             batch.draw(digits[pontuacaoDigits[0]], larguraDispositivo / 2 - digits[pontuacaoDigits[1]].getWidth() / 2 - 50,
-                    (alturaDispositivo - digits[pontuacaoDigits[1]].getHeight()) - 25);
+                    alturaDispositivo - 95);
         } else if (pontuacaoDigits.length == 3) {
 
             batch.draw(digits[pontuacaoDigits[2]], larguraDispositivo / 2 - digits[pontuacaoDigits[0]].getWidth() + 100,
-                    (alturaDispositivo - digits[pontuacaoDigits[2]].getHeight()) - 25);
+                    alturaDispositivo - 95);
             batch.draw(digits[pontuacaoDigits[1]], larguraDispositivo / 2 - digits[pontuacaoDigits[0]].getWidth() + 50,
-                    (alturaDispositivo - digits[pontuacaoDigits[2]].getHeight()) - 25);
+                    alturaDispositivo - 95);
             batch.draw(digits[pontuacaoDigits[0]], larguraDispositivo / 2 - digits[pontuacaoDigits[0]].getWidth(),
-                    (alturaDispositivo - digits[0].getHeight()) - 25);
+                    alturaDispositivo - 95);
         }
     }
 
